@@ -1,0 +1,124 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<meta http-equiv="Content-Security-Policy" content="default-src * data: gap: content: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+	<script src="components/loader.js"></script>
+	<link rel="stylesheet" href="components/loader.css">
+	<link rel="stylesheet" href="css/style.css">
+	<script>
+		function searchForContacts() {
+			var searchOptions = new ContactFindOptions();
+			searchOptions.filter = document.querySelector('#contactSearch').value;
+			searchOptions.multiple = true; 
+
+			// This will search all fields for a match to the search string. If you would
+			// prefer to only search the name, you can instead use:
+			// var fieldsToMatch = [navigator.contacts.fieldType.displayName, navigator.contacts.fieldType.name];
+			var fieldsToMatch = ['*'];
+
+			navigator.contacts.find(
+				fieldsToMatch,
+				onContactsListRetrieved,
+				onContactRetrieveError,
+				searchOptions
+			);
+		}
+
+		function openContactChooser() {
+			navigator.contacts.pickContact(onSingleContactRetrieved);
+		}
+
+		function getAllContacts() {
+			var options = new ContactFindOptions();
+			options.filter = "";
+			options.multiple = true;
+
+			var fieldsToMatch = ['*'];
+
+			navigator.contacts.find(
+				fieldsToMatch,
+				onContactsListRetrieved,
+				onContactRetrieveError,
+				options
+			);
+		}
+
+		function onSingleContactRetrieved(contact) {
+			document.querySelector('.contacts-list').innerHTML = generateContactHtml(contact);
+		}
+
+		function onContactsListRetrieved(contacts) {
+			var contactsHtml = '';
+
+			if(contacts.length) {
+				contacts.forEach(function(contact) {
+					contactsHtml += generateContactHtml(contact);
+				});
+			} else {
+				contactsHtml = 'No results';
+			}
+
+			document.querySelector('.contacts-list').innerHTML = contactsHtml;
+		}
+
+		function generateContactHtml(contact) {
+			// For simplicity we will only show one phone number and email per contact
+			var phoneNumberText = '';
+			if(contact.phoneNumbers && contact.phoneNumbers.length) {
+				phoneNumberText = contact.phoneNumbers[0].value;
+			} else {
+				phoneNumberText = 'No phone number'; 
+			}
+
+			var emailText = '';
+			if(contact.emails && contact.emails.length) {
+				emailText = contact.emails[0].value;
+			} else {
+				emailText = 'No email address';
+			}
+
+			var imageHtml = '';
+			if(contact.photos && contact.photos.length) {
+				imageHtml = '<img src="' + contact.photos[0].value + '">';
+			}
+
+			return '<li class="contact">' +
+					'<div class="contact-details">' +
+						'<strong>' + getContactName(contact) + '</strong><br>' +
+						phoneNumberText + '<br>' +
+						emailText + '<br>' +
+					'</div>' +
+					imageHtml +
+				'</li>';
+		}
+
+		function getContactName(contact) {
+			// iOS does not support displayName, so we fall back to name.formatted in that case
+			return contact.displayName || contact.name.formatted;
+		}
+
+		function onContactRetrieveError(err) {
+			alert('Failed to retrieve contacts. Does the app have permission to access contacts? (Error Code ' + err.code + ')');
+		}
+	</script>
+</head>
+<body>
+	<h2>Contacts Plugin Demo</h2>
+
+	<div class="search-area">
+		<input type="search" id="contactSearch" name="contactSearch" placeholder="type a name to search" />
+		<button onclick="searchForContacts()">Search for contacts</button>
+	</div>
+	<div class="or-divider">or</div>
+	<button onclick="openContactChooser()">Choose a contact from a list</button>
+	<div class="or-divider">or</div>
+	<button onclick="getAllContacts()">Get all contacts</button>
+
+	<h3>Result</h3>
+	<ul class="contacts-list">
+		Use one of the buttons above to see contacts here
+	</ul>
+</body>
+</html>
